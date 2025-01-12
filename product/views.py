@@ -1,5 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import viewsets, generics, permissions, status
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.views import APIView
@@ -16,6 +18,8 @@ class CategoryProductViewSet(viewsets.ModelViewSet):
     serializer_class = CategoryProductSerializer
     lookup_field = 'slug'
 
+    
+
     def get_permissions(self):
         if self.request.method == "GET":
             return [permissions.AllowAny()]
@@ -31,6 +35,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'category']
     ordering_fields = ['price', 'create_at']
     lookup_field = 'slug'
+
+
+    @method_decorator(cache_page(60 * 15))
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+    
 
     def get_permissions(self):
         if self.request.method == "GET":

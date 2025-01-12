@@ -1,0 +1,86 @@
+services:
+    app:
+      container_name: app
+      build: .
+      command: >
+          sh -c "python manage.py collectstatic --no-input &&
+          python manage.py migrate &&
+          gunicorn config.wsgi:application -b 0.0.0.0:8000"
+      volumes:
+        - .:/app:rw
+        - static_volume:/app/static
+        - media_volume:/app/media
+        - logs_volume:/app/logs
+      expose:
+        - "8000"
+      env_file:
+        - .env
+      restart: always
+      networks:
+        - main
+      depends_on:
+        - postgres
+
+    postgres:
+      container_name: postgresql
+      image: postgres:16.2
+      environment: 
+        - POSTGRES_DB=mydatabase
+        - POSTGRES_USER=user_admin
+        - POSTGRES_PASSWORD=Abc147147
+      env_file:
+        - .env
+      restart: always
+      networks:
+        - main
+      ports: 
+        - "5432:5432"
+      volumes:
+        - postgres_data:/var/lib/postgresql/data/
+    
+    redis:
+      container_name: redis
+      image: redis:7.4.0-alpine
+      ports:
+        - "6379:6379"
+      volumes:
+        - redis_data:/var/lib/redis/data/
+      restart: always
+      networks:
+        - main
+
+    celery_worker:
+      container_name: celery_worker
+      command: "celery -A config worker -l INFO"
+      depends_on:
+        - app
+        - redis
+        - postgres
+      image: celery
+      restart: always
+      networks:
+        - main
+
+    nginx:
+      container_name: nginx
+      image: nginx
+      command: nginx -g 'daemon off;'
+      depends_on:
+        - app
+      ports:
+        - "80:80"
+      restart: always
+      networks:
+        - main
+      volumes:
+        - ./nginx.conf:/etc/nginx/nginx.conf
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
+  logs_volume:
+networks:
+  main:
+  

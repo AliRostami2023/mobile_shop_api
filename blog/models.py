@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
+from slugify import slugify
 from core.models import CreateMixin, UpdateMixin
 
 
@@ -14,6 +15,12 @@ class CategoryArticle(CreateMixin, UpdateMixin):
 
 	def __str__(self):
 		return self.title
+	
+
+	def save(self, *args, **kwargs):
+		if not self.slug or (self.pk and CategoryArticle.objects.get(pk=self.pk).title != self.title):
+			self.slug = slugify(self.title, allow_unicode=True)
+		return super().save(*args, **kwargs)
 
 
 
@@ -28,7 +35,12 @@ class Article(CreateMixin, UpdateMixin):
 
 	def __str__(self):
 		return self.title
+	
 
+	def save(self, *args, **kwargs):
+		if not self.slug or (self.pk and Article.objects.get(pk=self.pk).title != self.title):
+			self.slug = slugify(self.title, allow_unicode=True)
+		return super().save(*args, **kwargs)
 
 
 class CommentArticle(CreateMixin):
